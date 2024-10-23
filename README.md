@@ -5,10 +5,9 @@ A ROS2 python package that simulates a rgbd camera in a gazebo world and logs de
 ### Setup and Run
 
 ```
-mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
+mkdir ~/ros2_ws/
+cd ~/ros2_ws/
 git clone https://github.com/Shubh152/perception_task.git
-cd ../
 . /opt/ros/jazzy/setup.bash
 colcon build
 . install/setup.bash
