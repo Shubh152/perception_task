@@ -5,8 +5,8 @@ A ROS2 python package that simulates a rgbd camera in a gazebo world and logs de
 ### Setup and Run
 
 ```
-mkdir ~/ros2_ws/
-cd ~/ros2_ws/
+mkdir -p ~/ros2_ws
+cd ~/ros2_ws
 git clone https://github.com/Shubh152/perception_task.git
 . /opt/ros/jazzy/setup.bash
 colcon build
@@ -16,8 +16,17 @@ ros2 launch perception_task main.launch.py
 
 - Rviz and Gazebo windows will pop up and terminal will start logging.
 - Play the Gazebo Sim. A window with name "RGB Image" is shown.
-- Intially depth of the centre of the RGB image is logged
-- To get depth of desired coordinate, click on the coordinate in the image and press any key with focus on window
-- The coordinates ofthe selected point along with the estimated depth is logged in the terminal.
+- To get space coordinates of the desired point from the image, click on the point in the image and press any key
+- The space coordinates of the selected point wrt the reference frame are published on the /reference_frame/coord topic
+- After the coordinates are published, the RGB Image appears again.
+- The space coordinates of the selected point wrt the depth_camera frame are also published on the /depth_camera/coord topic
+
+To print the reference_frame coordinates on a seperate terminal, open a new terminal
+
+```
+ros2 topic list
+. /opt/ros/jazzy/setup.bash
+ros2 topic echo /reference_frame/coord
+```
 
 To kill the process, press `CTRL + C` in the terminal where log appears and press any key with focus on image window

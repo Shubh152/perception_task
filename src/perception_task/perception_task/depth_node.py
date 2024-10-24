@@ -3,7 +3,11 @@
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
+from geometry_msgs.msg import Point
 from cv_bridge import CvBridge, CvBridgeError
+import numpy as np
+from sensor_msgs.msg import PointCloud2 as pc2
+from geometry_msgs.msg import Point
 import cv2
 import numpy as np
 
@@ -12,22 +16,62 @@ class DepthImageProcessor(Node):
         super().__init__('depth_image_processor')
         self.x_coord = 320
         self.y_coord = 240
-        # Initialize the CvBridge
+        
         self.bridge = CvBridge()
 
-        self.depth_subscriber = self.create_subscription(
-            Image,
-            '/depth_camera/depth_image',  # Adjust the topic name based on your setup
-            self.depth_callback,
+        # self.depth_subscriber = self.create_subscription(
+        #     Image,
+        #     '/depth_camera/depth_image',  # Adjust the topic name based on your setup
+        #     self.depth_callback,
+        #     10
+        # )
+
+
+        self.point_subscribe = self.create_subscription(
+            pc2,
+            '/depth_camera/points',
+            self.pixel_to_3d_point,
             10
         )
 
-        self.depth_subscriber = self.create_subscription(
+        self.point_publisher = self.create_publisher(
+            Point,
+            '/depth_camera/coord',
+            10
+        )
+        
+        self.rgb_subscriber = self.create_subscription(
             Image,
-            '/depth_camera/image',  # Adjust the topic name based on your setup
+            '/depth_camera/image', 
             self.rgb_callback,
             10
         )
+
+    def pixel_to_3d_point(self,pCloud):
+        v = self.y_coord
+        u =  self.x_coord
+        # Convert from u (column / width), v (row/height) to position in array
+        # where X,Y,Z data starts
+        array_position = v * pCloud.row_step + u * pCloud.point_step
+        
+        # Compute position in array where x,y,z data start
+        array_pos_x = array_position + pCloud.fields[0].offset  # X has an offset of 0
+        array_pos_y = array_position + pCloud.fields[1].offset  # Y has an offset of 4
+        array_pos_z = array_position + pCloud.fields[2].offset  # Z has an offset of 8
+        
+        # Extract X, Y, Z coordinates from the point cloud data
+        X = np.frombuffer(pCloud.data[array_pos_x:array_pos_x + 4], dtype=np.float32)[0]
+        Y = np.frombuffer(pCloud.data[array_pos_y:array_pos_y + 4], dtype=np.float32)[0]
+        Z = np.frombuffer(pCloud.data[array_pos_z:array_pos_z + 4], dtype=np.float32)[0]
+        
+        # Create a geometry_msgs Point object and assign X, Y, Z to it
+        point = Point()
+        point.x = float(X)
+        point.y = float(Y)
+        point.z = float(Z)
+        
+        self.get_logger().info("Publishing point")
+        self.point_publisher.publish(point)
 
     def rgb_callback(self,msg):
         try:

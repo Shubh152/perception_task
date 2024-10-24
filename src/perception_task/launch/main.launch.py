@@ -20,33 +20,33 @@ def generate_launch_description():
        executable='static_transform_publisher',
        name='static_transform_publisher',
        output='screen',
-       arguments=["0", "0", "-1.15", "0", "0", "0", "depth_camera/depth_camera/depth_camera", "depth_camera/reference_frame/"]
+       arguments=["0", "0", "-1.15", "0", "0", "0", "depth_camera/depth_camera/depth_camera", "depth_camera/reference_frame"]
     )
 
 
     ros_gz_bridge_pc = launch_ros.actions.Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
-        arguments=["depth_camera/points@sensor_msgs/msg/PointCloud2@gz.msgs.PointCloudPacked"],
+        arguments=["depth_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked"],
     )
 
     ros_gz_bridge_image = launch_ros.actions.Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
-        arguments=["depth_camera/image@sensor_msgs/msg/Image@gz.msgs.Image"],
+        arguments=["depth_camera/image@sensor_msgs/msg/Image[gz.msgs.Image"],
     )
 
-    ros_gz_bridge_depth = launch_ros.actions.Node(
-        package='ros_gz_bridge',
-        executable='parameter_bridge',
-        arguments=["depth_camera/depth_image@sensor_msgs/msg/Image@gz.msgs.Image"],
-    )
+    # ros_gz_bridge_depth = launch_ros.actions.Node(
+    #     package='ros_gz_bridge',
+    #     executable='parameter_bridge',
+    #     arguments=["depth_camera/depth_image@sensor_msgs/msg/Image[gz.msgs.Image"],
+    # # )
 
-    ros_gz_bridge_info = launch_ros.actions.Node(
-        package='ros_gz_bridge',
-        executable='parameter_bridge',
-        arguments=["depth_camera/camera_info@sensor_msgs/msg/CameraInfo@gz.msgs.CameraInfo"],
-    )
+    # ros_gz_bridge_info = launch_ros.actions.Node(
+    #     package='ros_gz_bridge',
+    #     executable='parameter_bridge',
+    #     arguments=["depth_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo"],
+    # )
 
     depth_node = launch_ros.actions.Node(
         package='perception_task',
@@ -66,7 +66,14 @@ def generate_launch_description():
         package='message_tf_frame_transformer',
         executable='message_tf_frame_transformer',
         output='screen',
-        arguments=["--ros-args", "-r","~/input:=/depth_camera/points","-r","~/transformed:=/reference/points","-p","_target_frame_id:=/depth_camera/reference"],
+        parameters=[{
+            "source_frame_id": "depth_camera/depth_camera/depth_camera",
+            "target_frame_id": "depth_camera/reference_frame",
+        }],
+        remappings=[
+            ('/message_tf_frame_transformer/input', '/depth_camera/coord'),
+            ('/message_tf_frame_transformer/transformed', '/reference_frame/coord'),
+        ]
     )
 
     return launch.LaunchDescription([
@@ -87,11 +94,10 @@ def generate_launch_description():
                 'on_exit_shutdown': 'True'
             }.items(),
         ),
+        broadcast_tf_static_reference,
         ros_gz_bridge_image,
         ros_gz_bridge_pc,
-        ros_gz_bridge_depth,
-        ros_gz_bridge_info,
         depth_node,
         rviz_node,
-        broadcast_tf_static_reference,
+        message_transform
     ])
